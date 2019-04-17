@@ -1,24 +1,144 @@
-﻿<div class="jumbotron">
-    <h1>ASP.NET</h1>
-    <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS, and JavaScript.</p>
-    <p><a href="https://asp.net" class="btn btn-primary btn-lg">Learn more &raquo;</a></p>
+﻿<br /><br />
+<div class="col-md-2">
+    <button class="btn btn-success" id="addButton">Add</button>
 </div>
-<div class="row">
-    <div class="col-md-4">
-        <h2>Getting started</h2>
-        <p>ASP.NET Web API is a framework that makes it easy to build HTTP services that reach
-        a broad range of clients, including browsers and mobile devices. ASP.NET Web API
-        is an ideal platform for building RESTful applications on the .NET Framework.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301870">Learn more &raquo;</a></p>
+<br />
+<hr />
+<table id="dataTable" class="table table-hover table-bordered">
+    <tr>
+        <th>Product Id</th>
+        <th>Product Name</th>
+        <th>Action</th>
+    </tr>
+</table>
+
+<div class="form-horizontal" id="dataEntryForm">
+    <div class="form-group">
+        <label class="control-label col-md-2">Id</label>
+        <input type="text" class="form-control" id="idInput" />
     </div>
-    <div class="col-md-4">
-        <h2>Get more libraries</h2>
-        <p>NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301871">Learn more &raquo;</a></p>
+    <div class="form-group">
+        <label class="control-label col-md-2">Name</label>
+        <input type="text" class="form-control" id="nameInput" />
     </div>
-    <div class="col-md-4">
-        <h2>Web Hosting</h2>
-        <p>You can easily find a web hosting company that offers the right mix of features and price for your applications.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301872">Learn more &raquo;</a></p>
+    <div class="form-group ">
+        <button class="col-md-offset-2 btn btn-success" id="saveButton">Save</button>
     </div>
 </div>
+
+@section scripts
+{
+    <script type="text/javascript">
+        var form = $('#dataEntryForm');
+        var idInput = $('#idInput');
+        var nameInput = $('#nameInput');
+        var editMode = false;
+
+        $(function () {
+            form.hide();
+            getDataAndViewInTable();
+
+            var addButton = $('#addButton');
+            addButton.click(function () {
+                form.show();
+            });
+
+            var saveButton = $('#saveButton');
+            saveButton.click(function () {
+                saveProduct();
+            });
+        });
+
+        function getDataAndViewInTable() {
+            $.ajax({
+                url: '/api/Values',
+                type: 'get',
+                success: function (data) {
+                    var table = $('#dataTable');
+
+                    for (var i = 0; i < data.length; i++) {
+                        table.append(`<tr>
+                                                    <td>${data[i].Id}</td>
+                                                    <td>${data[i].Name}</td>
+                                                    <td>
+                                                        <a class='btn btn-primary' onclick='editProduct(${data[i].Id})'>Edit</a>
+                                                        <a class='btn btn-danger' onclick='deleteProduct(${data[i].Id})'>Delete</a>
+                                                    </td>
+                                            </tr>`);
+                    }
+                }
+            });
+        }
+
+        function deleteProduct(productId) {
+            $.ajax({
+                url: 'api/Values/' + productId,
+                type: 'delete',
+                success: function () {
+                    clearData();
+                    getDataAndViewInTable();
+                }
+            });
+        }
+
+        function clearData() {
+            var table = $('#dataTable');
+            table.find("tr:not(:first)").remove();
+        }
+
+        function saveProduct() {
+            var id = idInput.val();
+            var name = nameInput.val();
+
+            if (editMode === false) {
+                $.ajax({
+                    url: '/api/Values',
+                    type: 'post',
+                    data: JSON.stringify({ Id: id, Name: name }),
+                    contentType: 'application/json',
+                    success: function () {
+                        refreshDataAndHideForm();
+                    }
+                });
+            } else {
+                $.ajax({
+                    url: '/api/Values/' + id,
+                    type: 'put',
+                    data: JSON.stringify({ Id: id, Name: name }),
+                    contentType: 'application/json',
+                    success: function () {
+
+                        refreshDataAndHideForm();
+                    },
+                    error: function () {
+
+                    }
+                });
+            }
+
+
+        }
+
+        function refreshDataAndHideForm() {
+            clearData();
+            getDataAndViewInTable();
+            idInput.val('');
+            nameInput.val('');
+            form.hide();
+        }
+
+        function editProduct(productId) {
+            $.ajax({
+                url: 'api/Values/' + productId,
+                type: 'get',
+                success: function (data) {
+                    idInput.val(data.Id);
+                    nameInput.val(data.Name);
+                    form.show();
+                    editMode = true;
+                }
+            });
+        }
+
+    </script>
+}
